@@ -328,7 +328,6 @@ contract HospitalSystem {
         Doctor memory doc = doctors[_doctorId];
         return (doc.name, doc.available, doc.consultationFee);
     }
-
     function getAppointment(address _patient) public view returns (uint256, uint256, bool) {
         Appointment memory appointment = appointments[_patient];
         return (appointment.doctorId, appointment.date, appointment.confirmed);
@@ -418,3 +417,56 @@ contract Ecommerce {
         return orders[_orderId];
     }
 }
+*************************************************************************************************************************************************
+//Shop system
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Shop {
+    address public owner;
+    
+    struct Item {
+        string name;
+        uint256 price;
+        uint256 quantity;
+    }
+    
+    mapping(uint256 => Item) public items;
+    uint256 public itemCount;
+
+    event ItemAdded(uint256 itemId, string name, uint256 price, uint256 quantity);
+    event ItemPurchased(uint256 itemId, address buyer, uint256 quantity);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can perform this action");
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    function addItem(string memory _name, uint256 _price, uint256 _quantity) public onlyOwner {
+        itemCount++;
+        items[itemCount] = Item(_name, _price, _quantity);
+        emit ItemAdded(itemCount, _name, _price, _quantity);
+    }
+
+    function buyItem(uint256 _itemId, uint256 _quantity) public payable {
+        Item storage item = items[_itemId];
+        require(_itemId > 0 && _itemId <= itemCount, "Item does not exist");
+        require(item.quantity >= _quantity, "Not enough quantity available");
+        require(msg.value >= item.price * _quantity, "Insufficient payment");
+
+        item.quantity -= _quantity;
+        payable(owner).transfer(msg.value);
+
+        emit ItemPurchased(_itemId, msg.sender, _quantity);
+
+        // Refund excess payment
+        if (msg.value > item.price * _quantity) {
+            payable(msg.sender).transfer(msg.value - item.price * _quantity);
+        }
+    }
+}
+*******************************************************************************************************************************************************
