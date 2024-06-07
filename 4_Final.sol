@@ -470,3 +470,52 @@ contract Shop {
     }
 }
 *******************************************************************************************************************************************************
+//Atm system
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract ATMSystem {
+    address public owner;
+
+    mapping(address => uint256) public balances;
+
+    event Deposit(address indexed account, uint256 amount);
+    event Withdrawal(address indexed account, uint256 amount);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can perform this action");
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    function deposit() public payable {
+        require(msg.value > 0, "Deposit amount must be greater than 0");
+        balances[msg.sender] += msg.value;
+        emit Deposit(msg.sender, msg.value);
+    }
+
+    function withdraw(uint256 _amount) public {
+        require(_amount > 0, "Withdrawal amount must be greater than 0");
+        require(balances[msg.sender] >= _amount, "Insufficient balance");
+
+        balances[msg.sender] -= _amount;
+        payable(msg.sender).transfer(_amount);
+        emit Withdrawal(msg.sender, _amount);
+    }
+
+    function checkBalance() public view returns (uint256) {
+        return balances[msg.sender];
+    }
+
+    function checkContractBalance() public view onlyOwner returns (uint256) {
+        return address(this).balance;
+    }
+
+    // Owner function to withdraw contract balance
+    function withdrawContractBalance() public onlyOwner {
+        payable(owner).transfer(address(this).balance);
+    }
+}
